@@ -29,7 +29,7 @@ fun AppContent() {
         topBar = {
             TopAppBar(
                 title = {
-                    Text(text = "Songs")
+                    Text(text = "Music Player")
                 }
             )
         }

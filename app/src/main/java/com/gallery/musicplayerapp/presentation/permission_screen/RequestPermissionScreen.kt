@@ -25,9 +25,10 @@ import com.google.accompanist.permissions.rememberPermissionState
 @Composable
 fun RequestPermissionScreen(
     permission: String,
-    onPermissionGranted: () -> Unit
+    onPermissionGranted: () -> Unit,
 ) {
     val permissionState = rememberPermissionState(permission)
+
 
     LaunchedEffect(permissionState.status.isGranted) {
         if (permissionState.status.isGranted) {

@@ -55,7 +55,7 @@ fun MusicPlayerScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             selectedMusicUri?.let { uri ->
-                val currentMusic = state.musicList.find { it.uri == selectedMusicUri }
+                val currentMusic = state.musicList.find { it.uri == uri }
                 currentMusic?.let { model ->
                     MusicPlayer(
                         playNextTrack = { viewModel.playNextTrack() },

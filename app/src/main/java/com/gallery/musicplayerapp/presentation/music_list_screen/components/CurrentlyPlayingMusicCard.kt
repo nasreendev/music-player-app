@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.gallery.musicplayerapp.R
 
 @Composable
@@ -38,98 +41,101 @@ fun CurrentlyPlayingMusicCard(
     onPreviousClick: () -> Unit,
     onPlayAndPauseClick: () -> Unit,
     onCloseClick: () -> Unit,
-    onCardClick: () -> Unit
+    onCardClick: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier
+    Box(
+        modifier = modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .clickable {
-                onCardClick.invoke()
-            },
-        elevation = CardDefaults.elevatedCardElevation(4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .height(120.dp)
+            .background(Color(0xFFF5F5F5))
+            .clickable { onCardClick() }
     ) {
+        Icon(
+            imageVector = Icons.Default.Close,
+            contentDescription = "Close",
+            tint = Color.Gray,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .size(30.dp)
+                .clickable { onCloseClick() }
+        )
+
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+            Box(
+                modifier = Modifier
+                    .size(65.dp)
+                    .background(Color.Gray, shape = RoundedCornerShape(6.dp)),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(35.dp)
-                        .background(Color.Gray, shape = RoundedCornerShape(4.dp))
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_music),
-                        contentDescription = "Album Art",
-                        modifier = Modifier.align(Alignment.Center),
-                        tint = Color.White
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    AutoScrollingTitle(text = title, isMarquee = true)
-                    Text(
-                        text = artist,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = Color.Gray
-                    )
-                }
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_music),
+                    contentDescription = "Album Art",
+                    tint = Color.White,
+                    modifier = Modifier.size(35.dp)
+                )
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_skip_previous),
-                    contentDescription = "Skip Previous",
-                    tint = Color.Black,
-                    modifier = Modifier.clickable {
-                        onPreviousClick.invoke()
-                    }
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Column {
+                AutoScrollingTitle(
+                    text = title,
+                    isMarquee = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    painter = if (isPlaying) painterResource(id = R.drawable.ic_pause) else painterResource(
-                        id = R.drawable.ic_play
-                    ),
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = Color.Black,
-                    modifier = Modifier.clickable {
-                        onPlayAndPauseClick.invoke()
-                    }
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_skip_next),
-                    contentDescription = "Skip Next",
-                    tint = Color.Black,
-                    modifier = Modifier.clickable {
-                        onNextClick.invoke()
-                    }
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
-                    tint = Color.Gray,
-                    modifier = Modifier.clickable {
-                        onCloseClick.invoke()
-                    }
+                Spacer(modifier = Modifier.height(4.dp))
+                AutoScrollingTitle(
+                    text = artist,
+                    isMarquee = false,
+                    textSize = 14,
+                    textColor = Color.Gray
                 )
             }
         }
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 8.dp, vertical = 8.dp)
+                .padding(end = 12.dp)
+                .fillMaxSize(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_skip_previous),
+                contentDescription = "Previous",
+                tint = Color.Black,
+                modifier = Modifier
+                    .size(35.dp)
+                    .clickable { onPreviousClick() }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Icon(
+                painter = if (isPlaying) painterResource(id = R.drawable.ic_pause)
+                else painterResource(id = R.drawable.ic_play),
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                tint = Color.Black,
+                modifier = Modifier
+                    .size(38.dp)
+                    .clickable { onPlayAndPauseClick() }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                painter = painterResource(id = R.drawable.ic_skip_next),
+                contentDescription = "Next",
+                tint = Color.Black,
+                modifier = Modifier
+                    .size(35.dp)
+                    .clickable { onNextClick() }
+            )
+        }
     }
 }
+
+

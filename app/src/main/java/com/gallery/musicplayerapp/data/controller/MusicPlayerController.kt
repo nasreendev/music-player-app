@@ -4,168 +4,156 @@ import android.content.Context
 import android.media.MediaPlayer
 import android.net.Uri
 import android.util.Log
-import androidx.core.app.NotificationManagerCompat
 import com.gallery.musicplayerapp.domain.model.MusicModel
-import com.gallery.musicplayerapp.notification.showMusicNotification
-import com.gallery.musicplayerapp.presentation.music_player_screen.MusicPlayerState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 
+data class MusicPlayerState(
+    val musicList: List<MusicModel> = emptyList(),
+    val currentTrackUri: Uri? = null,
+    val isPlaying: Boolean = false,
+    var currentPlayBackPosition: Int = 0,
+    val duration: Int = 0,
+)
+
 class MusicPlayerController(private val context: Context) {
+
     private var mediaPlayer: MediaPlayer? = MediaPlayer().apply {
-        setOnCompletionListener {
-            playNextTrack()
-        }
+        setOnCompletionListener { next() }
     }
+
     private val _state = MutableStateFlow(MusicPlayerState())
-    val state = _state.asStateFlow()
+    val state: StateFlow<MusicPlayerState> = _state.asStateFlow()
 
     private var playbackJob: Job? = null
-
-    fun dismissNotification() {
-        val notificationManager = NotificationManagerCompat.from(context)
-        notificationManager.cancel(1)
-    }
-
-    fun stopMusic() {
-        mediaPlayer?.apply {
-            if (isPlaying) {
-                pause()
-            }
-            _state.update {
-                it.copy(
-                    isPlaying = false,
-                    currentTrackUri = _state.value.currentTrackUri,
-                    currentPlayBackPosition = 0
-                )
-            }
-        }
-    }
 
     fun updateMusicList(list: List<MusicModel>) {
         _state.update { it.copy(musicList = list) }
     }
 
-    fun seekToPosition(position: Int) {
-        mediaPlayer?.seekTo(position)
-        _state.update { it.copy(currentPlayBackPosition = position) }
-        Log.d("MusicPlayerController", "Seeked to position: $position")
-    }
-
-    fun playMusic(uri: Uri) {
-        mediaPlayer?.apply {
+    fun play(uri: Uri) {
+        mediaPlayer?.let { player ->
             try {
-                if (isPlaying) {
-                    pause()
-                }
-                reset()
-                setDataSource(context, uri)
-                prepare()
+                if (player.isPlaying) player.pause()
+                player.reset()
+                player.setDataSource(context, uri)
+                player.prepare()
 
-                if (_state.value.currentTrackUri == uri) {
-                    seekToPosition(_state.value.currentPlayBackPosition)
-                } else {
-                    seekTo(0)
-                }
-                start()
-                updateState(uri, true)
-                startTrackingPlaybackProgress()
-                val currentMusic = _state.value.musicList.find { it.uri == uri }
-                currentMusic?.let {
-                    showMusicNotification(
-                        context = context,
-                        isPlaying = true,
-                        songTitle = currentMusic.title,
-                        artistName = currentMusic.artist
-                    )
-                }
+                val shouldResume = (_state.value.currentTrackUri == uri)
+                val position = if (shouldResume) _state.value.currentPlayBackPosition else 0
+
+                player.seekTo(position)
+                player.start()
+
+                updateState(uri = uri, isPlaying = true)
+                startTrackingPlayback()
             } catch (e: Exception) {
                 Log.e("MusicPlayerController", "Error playing music: ${e.message}", e)
             }
         }
     }
 
-    fun pauseMusic() {
-        mediaPlayer?.takeIf { it.isPlaying }?.apply {
-            pause()
-            stopTrackingPlaybackProgress()
-            _state.update { it.copy(currentPlayBackPosition = currentPosition, isPlaying = false) }
-            val currentMusic =
-                _state.value.musicList.find { it.uri == _state.value.currentTrackUri }
-            currentMusic?.let {
-                showMusicNotification(
-                    context = context,
-                    isPlaying = false,
-                    songTitle = currentMusic.title,
-                    artistName = currentMusic.artist
+    fun pause() {
+        mediaPlayer?.takeIf { it.isPlaying }?.let { player ->
+            player.pause()
+            stop()
+            _state.update {
+                it.copy(
+                    currentPlayBackPosition = player.currentPosition,
+                    isPlaying = false
                 )
             }
-            Log.d("MusicPlayerController", "Paused at position: $currentPosition")
+            Log.d("MusicPlayerController", "Paused at position: ${player.currentPosition}")
         }
     }
 
-    fun playNextTrack() {
-        val currentState = _state.value
-        val musicList = currentState.musicList
-        val currentUri = currentState.currentTrackUri ?: return
+    fun stop() {
+        mediaPlayer?.let { player ->
+            if (player.isPlaying) player.pause()
+            _state.update {
+                it.copy(
+                    isPlaying = false,
+                    currentPlayBackPosition = 0
+                )
+            }
+        }
+    }
+
+    fun seekTo(position: Int) {
+        mediaPlayer?.seekTo(position)
+        _state.update { it.copy(currentPlayBackPosition = position) }
+        Log.d("MusicPlayerController", "Seeked to position: $position")
+    }
+
+    fun next() {
+        val currentUri = _state.value.currentTrackUri ?: return
+        val musicList = _state.value.musicList
 
         val currentIndex = musicList.indexOfFirst { it.uri == currentUri }
-        if (currentIndex >= 0) {
-            val nextIndex = (currentIndex + 1) % musicList.size
-            musicList[nextIndex].uri?.let { playMusic(it) }
-            _state.update { it.copy(currentTrackUri = musicList[nextIndex].uri) }
-        } else {
+        if (currentIndex == -1) {
             Log.e("MusicPlayerController", "Current Index not found in music list.")
+            return
+        }
+
+        val nextIndex = (currentIndex + 1) % musicList.size
+        musicList[nextIndex].uri?.let { nextUri ->
+            play(nextUri)
+            _state.update { it.copy(currentTrackUri = nextUri) }
         }
     }
 
-    fun playPreviousTrack() {
-        val currentState = _state.value
-        val musicList = currentState.musicList
-        val currentUri = currentState.currentTrackUri ?: return
+    fun previous() {
+        val currentUri = _state.value.currentTrackUri ?: return
+        val musicList = _state.value.musicList
 
         val currentIndex = musicList.indexOfFirst { it.uri == currentUri }
-        if (currentIndex >= 0) {
-            val previousIndex = if (currentIndex > 0) currentIndex - 1 else musicList.size - 1
-            musicList[previousIndex].uri?.let { playMusic(it) }
-            _state.update { it.copy(currentTrackUri = musicList[previousIndex].uri) }
-        } else {
+        if (currentIndex == -1) {
             Log.e("MusicPlayerController", "Current Index not found in music list.")
+            return
+        }
+
+        val previousIndex = if (currentIndex > 0) currentIndex - 1 else musicList.size - 1
+        musicList[previousIndex].uri?.let { previousUri ->
+            play(previousUri)
+            _state.update { it.copy(currentTrackUri = previousUri) }
         }
     }
 
-    private fun startTrackingPlaybackProgress() {
-        stopTrackingPlaybackProgress()
+    private fun updateState(uri: Uri, isPlaying: Boolean) {
+        mediaPlayer?.let { player ->
+            _state.update {
+                it.copy(
+                    currentTrackUri = uri,
+                    isPlaying = isPlaying,
+                    currentPlayBackPosition = player.currentPosition,
+                    duration = player.duration
+                )
+            }
+        }
+        Log.d("MusicPlayerController", "Updated state: ${_state.value}")
+    }
+
+    private fun startTrackingPlayback() {
+        stopTrackingPlayback()
         playbackJob = CoroutineScope(Dispatchers.Main).launch {
             while (mediaPlayer?.isPlaying == true) {
-                val currentPosition = mediaPlayer?.currentPosition ?: 0
-                _state.update { it.copy(currentPlayBackPosition = currentPosition) }
+                mediaPlayer?.currentPosition?.let { position ->
+                    _state.update { it.copy(currentPlayBackPosition = position) }
+                }
                 delay(1000)
             }
         }
     }
 
-    private fun stopTrackingPlaybackProgress() {
+    private fun stopTrackingPlayback() {
         playbackJob?.cancel()
-    }
-
-    private fun updateState(uri: Uri, isPlaying: Boolean) {
-        _state.update {
-            it.copy(
-                currentTrackUri = uri,
-                isPlaying = isPlaying,
-                currentPlayBackPosition = if (isPlaying) mediaPlayer?.currentPosition
-                    ?: 0 else it.currentPlayBackPosition,
-                duration = mediaPlayer?.duration ?: 0
-            )
-        }
-        Log.d("MusicPlayerController", "Updated state: $state")
     }
 }

@@ -9,7 +9,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.gallery.musicplayerapp.notification.createNotificationChannel
 import com.gallery.musicplayerapp.presentation.music_list_screen.MusicListScreen
 import com.gallery.musicplayerapp.presentation.music_player_screen.MusicPlayerScreen
 import com.gallery.musicplayerapp.presentation.permission_screen.AppContent
@@ -21,7 +20,6 @@ val localNavHostController = compositionLocalOf<NavHostController> {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        createNotificationChannel(this)
         setContent {
             val navController = rememberNavController()
             CompositionLocalProvider(localNavHostController provides navController) {

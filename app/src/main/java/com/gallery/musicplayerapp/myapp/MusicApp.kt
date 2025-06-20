@@ -2,7 +2,6 @@ package com.gallery.musicplayerapp.myapp
 
 import android.app.Application
 import com.gallery.musicplayerapp.di.appModule
-import com.gallery.musicplayerapp.notification.createNotificationChannel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
@@ -13,6 +12,5 @@ class MusicApp : Application() {
             androidContext(applicationContext)
             modules(appModule)
         }
-        createNotificationChannel(applicationContext)
     }
 }

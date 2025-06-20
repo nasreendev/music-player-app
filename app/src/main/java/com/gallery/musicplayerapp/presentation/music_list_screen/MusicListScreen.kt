@@ -24,7 +24,9 @@ import org.koin.androidx.compose.koinViewModel
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun MusicListScreen(viewModel: MusicListViewModel = koinViewModel()) {
+fun MusicListScreen(
+    viewModel: MusicListViewModel = koinViewModel(),
+) {
     val state by viewModel.state.collectAsState()
 
     var selectedMusicUri by remember {
@@ -34,9 +36,11 @@ fun MusicListScreen(viewModel: MusicListViewModel = koinViewModel()) {
         mutableStateOf(false)
     }
     val navController = localNavHostController.current
+
     LaunchedEffect(state.currentTrackUri) {
         selectedMusicUri = state.currentTrackUri
     }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -63,7 +67,7 @@ fun MusicListScreen(viewModel: MusicListViewModel = koinViewModel()) {
         }
         Box {
             selectedMusicUri?.let { uri ->
-                val currentMusic = state.musicList.find { it.uri == selectedMusicUri }
+                val currentMusic = state.musicList.find { it.uri == uri }
                 currentMusic?.let { model ->
                     CurrentlyPlayingMusicCard(
                         title = model.title,
@@ -89,7 +93,6 @@ fun MusicListScreen(viewModel: MusicListViewModel = koinViewModel()) {
                         onCloseClick = {
                             selectedMusicUri = null
                             viewModel.stopMusic()
-                            viewModel.dismissNotification()
                         }
                     )
                 }

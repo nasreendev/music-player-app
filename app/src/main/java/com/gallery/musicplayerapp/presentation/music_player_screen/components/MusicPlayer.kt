@@ -77,7 +77,7 @@ fun MusicPlayer(
     )
 
     Spacer(modifier = Modifier.height(16.dp))
-    Column() {
+    Column {
         Slider(
             value = currentPlayBackPosition.toFloat(),
             onValueChange = { position ->

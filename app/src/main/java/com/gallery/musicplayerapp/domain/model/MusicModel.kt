@@ -7,5 +7,5 @@ data class MusicModel(
     val artist: String = "",
     val id: String = "",
     val uri: Uri,
-    val duration: Int = 1
+    val duration: Int = 1,
 )
